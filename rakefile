@@ -2,8 +2,6 @@ require 'nypl_ruby_util'
 
 desc 'Run test suite'
 task :test do
-  sh %( which rspec )
-  sh %( ls vendor )
   sh %( rspec -fd )
 end
 
