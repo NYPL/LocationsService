@@ -1,23 +1,28 @@
 require 'nypl_ruby_util'
-
-require_relative 'lib/s3_manager'
-require_relative 'lib/locations_manager'
+require 'aws-sdk-s3'
+require 'json'
 
 def init
   return if $initialized
 
   $logger = NYPLRubyUtil::NyplLogFormatter.new($stdout, level: ENV['LOG_LEVEL'])
-  $kms_client = NYPLRubyUtil::KmsClient.new
-  $s3_client = S3Client.new
+  s3_config = { region: ENV['AWS_REGION'] }
+  s3_config[:profile] = ENV['PROFILE'] if ENV['PROFILE']
+  $s3_client = Aws::S3::Client.new(s3_config)
 
   begin
-      $s3_client.retrieve_data ENV['LOCATIONS_FILE']
-  rescue S3Error => e
+      raise StandardError.new("missing bucket or locations file") unless ENV['BUCKET'] && ENV['LOCATIONS_FILE']
+      locations_response = $s3_client.get_object(bucket: ENV['BUCKET'], key: ENV['LOCATIONS_FILE'])
+      $locations = JSON.parse(
+        locations_response.body.string
+      )
+        .map {|k, v| [ Regexp.new(k.gsub('*', '.*')), { code: k, url: v } ]}
+        .to_h
+
+  rescue StandardError => e
       $logger.info 'Received s3 error, unable to load locations file from s3', { message: e.message }
       return create_response(500, 'unable to load necessary data from AWS S3')
   end
-
-  $locations_manager = LocationsManager.new
 
   $logger.debug 'Initialized function'
   $initialized = true
@@ -45,9 +50,15 @@ def handle_event(event:, context:)
 end
 
 def fetch_locations_and_respond(params)
-    records = $locations_manager.fetch_locations params['location_codes']
-rescue LocationsManagerError
-    $logger.info 'Received LocationsManager error'
+  req_codes = params['location_codes'].split(",")
+  records = req_codes.map do |req_code|
+    [
+      req_code,
+      $locations.select {|k,v| k.match? req_code}.map {|k,v| v}
+    ]
+  end.to_h
+rescue StandardError
+    $logger.info 'Received error in fetch_locations_and_respond'
     create_response(500, 'Failed to fetch locations by code')
 else
     create_response(200, records)

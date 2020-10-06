@@ -1,0 +1,9 @@
+{
+  "resource": "/api/v0.1/locations",
+  "path": "/api/v0.1/locations",
+  "httpMethod": "GET",
+  "isBase64Encoded": false,
+  "queryStringParameters": {
+    "location_codes": "ag,al"
+  }
+}

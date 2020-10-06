@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Function for returning locations data by code
+
+Globals:
+  Function:
+    Timeout: 15
+    Runtime: ruby2.7
+    Handler: app.handle_event
+    Environment:
+      Variables:
+        LOG_LEVEL: debug
+        AWS_REGION: us-east-1
+        BUCKET: locations-mapping
+        LOCATIONS_FILE: locations.json
+        PROFILE: nypl-digital-dev
+
+Resources:
+  LocationsService:
+    Type: AWS::Serverless::Function

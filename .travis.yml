@@ -1,0 +1,60 @@
+language: ruby
+rvm:
+- 2.7
+before_install:
+- gem update --system
+- gem install bundler
+- gem install nypl_ruby_util
+- pip install awscli
+install:
+- rake run_bundler
+script:
+- rake test
+before_deploy:
+- rm -rf vendor
+- bundle install --without test
+deploy:
+- provider: lambda
+  function_name: LocationsService-qa
+  description: Service for fetching locations data by code
+  region: us-east-1
+  role: arn:aws:iam::946183545209:role/lambda-full-access
+  runtime: ruby2.7
+  timeout: 300
+  memory_size: 256
+  module_name: app
+  handler_name: handle_event
+  environment:
+    variables:
+      LOG_LEVEL: info
+      AWS_REGION: us-east-1
+      BUCKET: locations-mapping
+      LOCATIONS_FILE: locations.json
+  skip_cleanup: true
+  access_key_id: "$AWS_ACCESS_KEY_ID_QA"
+  secret_access_key: "$AWS_SECRET_ACCESS_KEY_QA"
+  on:
+    branch: qa
+- provider: lambda
+  function_name: LocationsService-production
+  description: Service for fetching locations data by code
+  region: us-east-1
+  role: arn:aws:iam::946183545209:role/lambda-full-access
+  runtime: ruby2.7
+  timeout: 300
+  memory_size: 256
+  module_name: app
+  handler_name: handle_event
+  environment:
+    variables:
+      LOG_LEVEL: info
+      AWS_REGION: us-east-1
+      BUCKET: locations-mapping-production
+      LOCATIONS_FILE: locations.json
+  skip_cleanup: true
+  access_key_id: "$AWS_ACCESS_KEY_ID_PRODUCTION"
+  secret_access_key: "$AWS_SECRET_ACCESS_KEY_PRODUCTION"
+  on:
+    branch: production
+after_deploy:
+- rake set_config

@@ -1,0 +1,75 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "v0.0.1",
+    "title": "Locations Service",
+    "description": "Service for retrieving locations data by code"
+  },
+  "host": "platform.nypl.org",
+  "basePath": "/api",
+  "schemes": ["http", "https"],
+  "tags": [{
+    "name": "locations",
+    "description": "Locations data retrieval service"
+  }],
+  "paths": {
+    "/v0.1/locations": {
+      "get": {
+        "tags": ["locations"],
+        "summary": "Retrieve locations data by code",
+        "description": "Returns the locations url associated with a list of codes",
+        "parameters": [{
+          "name": "location_codes",
+          "in": "query",
+          "description": "Comma-separated list of locations codes",
+          "required": true,
+          "type": "string",
+        }],
+        "responses": {
+          "200": {
+            "description": "A json of locations codes pointing to data",
+            "schema": {
+              "$ref": "#/definitions/LocationsResponse"
+            }
+          },
+          "404": {
+            "description": "Resource not found/invalid path",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+                "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "501": {
+            "description": "Invalid Method (Only GET requests valid)",
+            "schema": {
+                "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "LocationsResponse": {
+      "type": "string",
+      "example": "{\"ag*\":\"http://fake.com\",\"al*\":\"http://fakefake.com\"}" 
+    },
+    "ErrorResponse": {
+        "type": "object",
+        "properties": {
+            "statusCode": {
+                "type": "integer",
+                "format": "int32"
+            },
+            "data": {
+                "type": "string"
+            }
+        }
+    }
+  }
+}
