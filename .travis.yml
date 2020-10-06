@@ -9,7 +9,7 @@ before_install:
 install:
 - rake run_bundler
 script:
-- bundle exec rspec
+- rake test
 before_deploy:
 - rm -rf vendor
 - bundle install --without test
