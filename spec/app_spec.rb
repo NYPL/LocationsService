@@ -102,7 +102,7 @@ describe 'fetch_locations_and_respond' do
               :url => "http://fakefake.com"
             }
           ]
-        },
+        }.to_json,
         :headers => {
           :"Content-type" => "application/json"
         },
