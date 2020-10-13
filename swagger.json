@@ -23,7 +23,7 @@
           "in": "query",
           "description": "Comma-separated list of locations codes",
           "required": true,
-          "type": "string",
+          "type": "string"
         }],
         "responses": {
           "200": {
@@ -57,7 +57,7 @@
   "definitions": {
     "LocationsResponse": {
       "type": "string",
-      "example": "{\"ag*\":\"http://fake.com\",\"al*\":\"http://fakefake.com\"}" 
+      "example": "{\"ag*\":\"http://fake.com\",\"al*\":\"http://fakefake.com\"}"
     },
     "ErrorResponse": {
         "type": "object",
