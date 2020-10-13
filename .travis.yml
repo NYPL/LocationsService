@@ -20,7 +20,7 @@ deploy:
   region: us-east-1
   role: arn:aws:iam::946183545209:role/lambda-full-access
   runtime: ruby2.7
-  timeout: 300
+  timeout: 15
   memory_size: 256
   module_name: app
   handler_name: handle_event
@@ -28,7 +28,7 @@ deploy:
     variables:
       LOG_LEVEL: info
       AWS_REGION: us-east-1
-      BUCKET: locations-mapping
+      BUCKET: locations-mapping-qa
       LOCATIONS_FILE: locations.json
   skip_cleanup: true
   access_key_id: "$AWS_ACCESS_KEY_ID_QA"
@@ -41,7 +41,7 @@ deploy:
   region: us-east-1
   role: arn:aws:iam::946183545209:role/lambda-full-access
   runtime: ruby2.7
-  timeout: 300
+  timeout: 15
   memory_size: 256
   module_name: app
   handler_name: handle_event

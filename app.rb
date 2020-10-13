@@ -69,7 +69,7 @@ def create_response(status_code = 200, body = nil)
 
     {
         statusCode: status_code,
-        body: JSON.dump(body),
+        body: body,
         isBase64Encoded: false,
         headers: { 'Content-type': 'application/json' }
     }

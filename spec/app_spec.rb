@@ -89,7 +89,20 @@ describe 'fetch_locations_and_respond' do
       fetch_locations_and_respond({ 'location_codes' => 'ag,al' })
     ).to eq(
       {
-        :body => "{\"ag\":[{\"code\":\"ag*\",\"url\":\"http://fake.com\"}],\"al\":[{\"code\":\"al*\",\"url\":\"http://fakefake.com\"}]}",
+        :body => {
+          "ag" => [
+            {
+              :code => "ag*",
+              :url => "http://fake.com"
+              }
+            ],
+          "al" => [
+            {
+              :code => "al*",
+              :url => "http://fakefake.com"
+            }
+          ]
+        },
         :headers => {
           :"Content-type" => "application/json"
         },
