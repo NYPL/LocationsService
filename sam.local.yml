@@ -10,7 +10,7 @@ Globals:
     Environment:
       Variables:
         LOG_LEVEL: debug
-        AWS_REGION: us-east-1
+        S3_AWS_REGION: us-east-1
         BUCKET: locations-mapping
         LOCATIONS_FILE: locations.json
         PROFILE: nypl-digital-dev

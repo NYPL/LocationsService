@@ -30,7 +30,7 @@ Will respond with JSON as below:
 
 - LOG_LEVEL: e.g. 'info' or 'debug', sets the verbosity of the logs
 
-- AWS_REGION: usually 'us-east-1', the region in which to find the locations s3
+- S3_AWS_REGION: usually 'us-east-1', the region in which to find the locations s3
 
 - BUCKET: the name of the locations s3
 

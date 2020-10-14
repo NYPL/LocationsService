@@ -6,7 +6,7 @@ def init
   return if $initialized
 
   $logger = NYPLRubyUtil::NyplLogFormatter.new($stdout, level: ENV['LOG_LEVEL'])
-  s3_config = { region: ENV['AWS_REGION'] }
+  s3_config = { region: ENV['S3_AWS_REGION'] }
   s3_config[:profile] = ENV['PROFILE'] if ENV['PROFILE']
   $s3_client = Aws::S3::Client.new(s3_config)
 

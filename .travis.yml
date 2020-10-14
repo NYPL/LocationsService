@@ -27,7 +27,7 @@ deploy:
   environment:
     variables:
       LOG_LEVEL: info
-      AWS_REGION: us-east-1
+      S3_AWS_REGION: us-east-1
       BUCKET: locations-mapping-qa
       LOCATIONS_FILE: locations.json
   skip_cleanup: true
@@ -48,7 +48,7 @@ deploy:
   environment:
     variables:
       LOG_LEVEL: info
-      AWS_REGION: us-east-1
+      S3_AWS_REGION: us-east-1
       BUCKET: locations-mapping-production
       LOCATIONS_FILE: locations.json
   skip_cleanup: true
