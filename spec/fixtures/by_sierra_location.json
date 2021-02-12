@@ -1,0 +1,116 @@
+{
+  "bca0v": {
+    "code": "bca0v",
+    "label": "Bronx Library Center Non-Print Media",
+    "locationsApiSlug": null,
+    "collectionTypes": [
+      "Branch"
+    ],
+    "recapLocation": null,
+    "sierraDeliveryLocations": [],
+    "requestable": false,
+    "deliveryLocationTypes": []
+  },
+  "myar1": {
+    "code": "myar1",
+    "label": "Performing Arts - Reserve Film and Video - Reference",
+    "locationsApiSlug": null,
+    "collectionTypes": [
+      "Research",
+      "Branch"
+    ],
+    "recapLocation": null,
+    "sierraDeliveryLocations": [],
+    "requestable": false,
+    "deliveryLocationTypes": []
+  },
+  "rc2ma": {
+    "code": "rc2ma",
+    "label": "Offsite",
+    "locationsApiSlug": null,
+    "collectionTypes": [
+      "Research"
+    ],
+    "recapLocation": null,
+    "sierraDeliveryLocations": [],
+    "requestable": true,
+    "deliveryLocationTypes": []
+  },
+  "zzzzz": {
+    "code": "zzzzz",
+    "label": "mya",
+    "locationsApiSlug": null,
+    "collectionTypes": [
+      "Branch",
+      "Research"
+    ],
+    "recapLocation": null,
+    "sierraDeliveryLocations": [],
+    "requestable": false,
+    "deliveryLocationTypes": []
+  },
+  "myrfv": {
+    "code": "myrfv",
+    "label": "Performing Arts - Reserve Film and Video",
+    "locationsApiSlug": "lpa",
+    "collectionTypes": [
+      "Research",
+      "Branch"
+    ],
+    "recapLocation": {
+      "code": "NN",
+      "label": "LPA Reserve Film and Video",
+      "eddRequestable": false
+    },
+    "sierraDeliveryLocations": [
+      {
+        "code": "myrfv",
+        "label": "Performing Arts - Reserve Film and Video",
+        "locationsApiSlug": "lpa",
+        "deliveryLocationTypes": [
+          "Research",
+          "Branch"
+        ]
+      }
+    ],
+    "requestable": false,
+    "deliveryLocationTypes": [
+      "Research",
+      "Branch"
+    ]
+  },
+  "myrs": {
+    "code": "myrs",
+    "label": "Performing Arts - Special Collections Desk - 3rd Floor",
+    "locationsApiSlug": null,
+    "collectionTypes": [
+        "Research",
+        "Branch"
+      ],
+      "recapLocation": null,
+      "sierraDeliveryLocations": [
+      {
+        "code": "myr",
+        "label": "Performing Arts Research Collections",
+        "locationsApiSlug": "lpa",
+        "deliveryLocationTypes": [
+          "Research"
+        ]
+      }
+    ],
+    "requestable": false,
+    "deliveryLocationTypes": []
+  },
+  "mya0n": {
+    "code": "mya0n",
+    "label": "Performing Arts Circulating Non-Fiction",
+    "locationsApiSlug": null,
+    "collectionTypes": [
+      "Branch"
+    ],
+    "recapLocation": null,
+    "sierraDeliveryLocations": [],
+    "requestable": false,
+    "deliveryLocationTypes": []
+  }
+}

@@ -1,11 +1,19 @@
+require 'webmock/rspec'
+
 require_relative '../app'
 require_relative './spec_helper'
 
 ENV['BUCKET'] = 'bucket'
 ENV['LOCATIONS_FILE'] = 'locations_file'
 ENV['LOG_LEVEL'] = 'info'
+ENV['NYPL_CORE_S3_BASE_URL'] = 'https://example.com/'
 
 describe :init do
+  before(:each) do
+    stub_request(:get, ENV['NYPL_CORE_S3_BASE_URL'] + "by_sierra_location.json")
+    .to_return(status: 200, body: File.read("spec/fixtures/by_sierra_location.json"))
+  end
+
   it 'should initialize global variables' do
       mock_s3 = double(Aws::S3::Client)
       mock_response = OpenStruct.new
@@ -34,6 +42,8 @@ describe :handle_event do
     mock_response.body.string = "{\"ag*\":\"http://fake.com\",\"al*\":\"http://fakefake.com\"}"
     allow(Aws::S3::Client).to receive(:new).and_return(mock_s3)
     allow(mock_s3).to receive(:get_object).and_return(mock_response)
+    stub_request(:get, ENV['NYPL_CORE_S3_BASE_URL'] + "by_sierra_location.json")
+    .to_return(status: 200, body: File.read("spec/fixtures/by_sierra_location.json"))
   end
 
   it 'should call init' do
