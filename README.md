@@ -36,6 +36,8 @@ Will respond with JSON as below:
 
 - LOCATIONS_FILE: the name of the file in the s3 bucket that contains the locations
 
+- NYPL_CORE_S3_BASE_URL: base url for the S3 file containing `nypl-core` data
+
 - PROFILE: optional, useful for local testing.
 
 ## Installation
@@ -53,3 +55,9 @@ To run the function locally it may be invoked with rake, where FUNCTION is the n
 ## Testing
 
 Testing is provided via `rspec`. The test suite can be invoked with `rake test`
+
+## Running Server Locally
+To run the server locally:
+- First, run `bundle install --deployment` with matching Ruby version (2.7) running
+- Then, run `sam local start-api --template sam.local.yml`
+- Visit this url replacing `[location_codes]` with the list of locations code being checked `http://127.0.0.1:3000/api/v0.1/locations?location_codes=[location_codes]`
