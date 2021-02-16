@@ -57,7 +57,12 @@ def fetch_locations_and_respond(params)
   records = req_codes.map do |req_code|
     [
       req_code,
-      $locations.find {|k,v| k.match? req_code}.map {|k,v| v}
+      $locations.select {|k,v| k.match? req_code}.map {|k,v|
+        core_data = $nypl_core.check_sierra_location(req_code)
+        v[:core_data] = core_data if core_data
+
+        v
+      }
     ]
   end.to_h
 rescue StandardError
