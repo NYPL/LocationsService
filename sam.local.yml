@@ -18,3 +18,17 @@ Globals:
 Resources:
   LocationsService:
     Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.handle_event
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /api/v0.1/locations
+            Method: get
+      Runtime: ruby2.7
+      Timeout: 10
+      Environment:
+        Variables:
+          NYPL_CORE_S3_BASE_URL: https://s3.amazonaws.com/nypl-core-objects-mapping-production/
+          LOG_LEVEL: DEBUG

@@ -2,6 +2,8 @@ require 'nypl_ruby_util'
 require 'aws-sdk-s3'
 require 'json'
 
+require_relative 'lib/nypl_core'
+
 def init
   return if $initialized
 
@@ -9,6 +11,7 @@ def init
   s3_config = { region: ENV['S3_AWS_REGION'] }
   s3_config[:profile] = ENV['PROFILE'] if ENV['PROFILE']
   $s3_client = Aws::S3::Client.new(s3_config)
+  $nypl_core = NyplCore.new
 
   begin
       raise StandardError.new("missing bucket or locations file") unless ENV['BUCKET'] && ENV['LOCATIONS_FILE']
@@ -54,7 +57,12 @@ def fetch_locations_and_respond(params)
   records = req_codes.map do |req_code|
     [
       req_code,
-      $locations.select {|k,v| k.match? req_code}.map {|k,v| v}
+      $locations.select {|k,v| k.match? req_code}.map {|k,v|
+        core_data = $nypl_core.check_sierra_location(req_code) || {}
+        v[:label] = core_data['label'] ? core_data['label'] : nil
+
+        v
+      }
     ]
   end.to_h
 rescue StandardError
