@@ -1,0 +1,14 @@
+{
+  "ct": {
+    "code": "ct",
+    "label": "Fake Park",
+    "locationsApiSlug": null,
+    "collectionTypes": [
+      "Branch"
+    ],
+    "recapLocation": null,
+    "sierraDeliveryLocations": [],
+    "requestable": false,
+    "deliveryLocationTypes": []
+  }
+}

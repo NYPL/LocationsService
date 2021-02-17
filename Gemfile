@@ -11,6 +11,7 @@ end
 group :test do
     gem 'mocha'
     gem 'rspec'
+    gem 'webmock'
     gem 'rubocop', require: false
 end
 
