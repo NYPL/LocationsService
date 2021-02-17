@@ -41,13 +41,13 @@
           "500": {
             "description": "Internal Server Error",
             "schema": {
-                "$ref": "#/definitions/ErrorResponse"
+              "$ref": "#/definitions/ErrorResponse"
             }
           },
           "501": {
             "description": "Invalid Method (Only GET requests valid)",
             "schema": {
-                "$ref": "#/definitions/ErrorResponse"
+              "$ref": "#/definitions/ErrorResponse"
             }
           }
         }
@@ -56,20 +56,32 @@
   },
   "definitions": {
     "LocationsResponse": {
-      "type": "string",
-      "example": "{\"ag*\":\"http://fake.com\",\"al*\":\"http://fakefake.com\"}"
+      "properties": {
+        "url": {
+          "type": "string",
+          "example": "Location URL"
+        },
+        "code": {
+          "type": "string",
+          "example": "Location code"
+        },
+        "label": {
+          "type": "string",
+          "example": "Location label"
+        }
+      }
     },
     "ErrorResponse": {
-        "type": "object",
-        "properties": {
-            "statusCode": {
-                "type": "integer",
-                "format": "int32"
-            },
-            "data": {
-                "type": "string"
-            }
+      "type": "object",
+      "properties": {
+        "statusCode": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "data": {
+          "type": "string"
         }
+      }
     }
   }
 }

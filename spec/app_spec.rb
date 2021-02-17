@@ -95,7 +95,7 @@ describe :handle_event do
 end
 
 describe 'fetch_locations_and_respond' do
-  it 'should return the correctly mapped locations without NYPL core data, if not available' do
+  it 'should return the correctly mapped locations with label set to `nil`, if label not available' do
     expect(
       fetch_locations_and_respond({ 'location_codes' => 'ag,al' })
     ).to eq(
@@ -104,13 +104,15 @@ describe 'fetch_locations_and_respond' do
           "ag" => [
             {
               :code => "ag*",
-              :url => "http://fake.com"
+              :url => "http://fake.com",
+              :label => nil
             }
           ],
           "al" => [
             {
               :code => "al*",
-              :url => "http://fakefake.com"
+              :url => "http://fakefake.com",
+              :label => nil
             }
           ]
         }.to_json,
@@ -123,7 +125,7 @@ describe 'fetch_locations_and_respond' do
     )
   end
 
-  it 'should return the correctly mapped locations with NYPL core data, if available' do
+  it 'should return the correctly mapped locations with label from NYPL core, if available' do
     expect(
       fetch_locations_and_respond({ 'location_codes' => 'ct,al' })
     ).to eq(
@@ -133,24 +135,14 @@ describe 'fetch_locations_and_respond' do
             {
               :code => "ct*",
               :url => "http://fakewithcoredata.com",
-              :core_data => {
-                "code": "ct",
-                "label": "Fake Park",
-                "locationsApiSlug": nil,
-                "collectionTypes": [
-                  "Branch"
-                ],
-                "recapLocation": nil,
-                "sierraDeliveryLocations": [],
-                "requestable": false,
-                "deliveryLocationTypes": []
-              },
+              :label => "Fake Park"
             }
           ],
           "al" => [
             {
               :code => "al*",
-              :url => "http://fakefake.com"
+              :url => "http://fakefake.com",
+              :label => nil
             }
           ]
         }.to_json,

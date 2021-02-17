@@ -58,8 +58,8 @@ def fetch_locations_and_respond(params)
     [
       req_code,
       $locations.select {|k,v| k.match? req_code}.map {|k,v|
-        core_data = $nypl_core.check_sierra_location(req_code)
-        v[:core_data] = core_data if core_data
+        core_data = $nypl_core.check_sierra_location(req_code) || {}
+        v[:label] = core_data['label'] ? core_data['label'] : nil
 
         v
       }
