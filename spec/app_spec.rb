@@ -154,4 +154,27 @@ describe 'fetch_locations_and_respond' do
       }
     )
   end
+
+  it 'if not in locations S3, should still return label from NYPL core, if available' do
+    expect(
+      fetch_locations_and_respond({ 'location_codes' => 'sa' })
+    ).to eq(
+      {
+        :body => {
+          "sa" => [
+            {
+              :code => "sa",
+              :label => "St. A",
+              :url => nil
+            }
+          ]
+        }.to_json,
+        :headers => {
+          :"Content-type" => "application/json"
+        },
+        :isBase64Encoded => false,
+        :statusCode => 200
+      }
+    )
+  end
 end
