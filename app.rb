@@ -53,21 +53,30 @@ def handle_event(event:, context:)
 end
 
 def fetch_locations_and_respond(params)
-  req_codes = params['location_codes'].split(",")
-  records = req_codes.map do |req_code|
-    data = []
-    core_data = $nypl_core.check_sierra_location(req_code) || {}
-    label = core_data['label'] || nil
+  location_codes = params['location_codes'].split(",")
 
-    $locations.select {|k,v| k.match? req_code}.each {|k,v|
+  records = location_codes.map do |location_code|
+    ##
+    # We are allowing for the possibility of
+    # a location code having two entries in $locations
+    data = []
+
+    # extract the label from $nypl_core
+    core_data = $nypl_core.check_sierra_location(location_code) || {}
+    label = core_data['label'] || nil
+    # iterate over locations to find any match(es)
+    $locations.select {|k,v| k.match? location_code}.each {|k,v|
+      # add in the label as assigned above
       v[:label] = label
       data << v
     }
-
-    data << { code: req_code, label: label, url: nil } if data.length == 0
+    ##
+    # location_code could be in $nypl_core but missing in $locations
+    # add it to response here
+    data << { code: location_code, label: label, url: nil } if data.length == 0
 
     [
-      req_code,
+      location_code,
       data
     ]
   end.to_h
