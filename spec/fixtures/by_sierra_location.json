@@ -10,5 +10,17 @@
     "sierraDeliveryLocations": [],
     "requestable": false,
     "deliveryLocationTypes": []
+  },
+  "sa": {
+    "code": "sa",
+    "label": "St. A",
+    "locationsApiSlug": null,
+    "collectionTypes": [
+      "Branch"
+    ],
+    "recapLocation": null,
+    "sierraDeliveryLocations": [],
+    "requestable": false,
+    "deliveryLocationTypes": []
   }
 }

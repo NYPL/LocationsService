@@ -53,20 +53,35 @@ def handle_event(event:, context:)
 end
 
 def fetch_locations_and_respond(params)
-  req_codes = params['location_codes'].split(",")
-  records = req_codes.map do |req_code|
-    [
-      req_code,
-      $locations.select {|k,v| k.match? req_code}.map {|k,v|
-        core_data = $nypl_core.check_sierra_location(req_code) || {}
-        v[:label] = core_data['label'] ? core_data['label'] : nil
+  location_codes = params['location_codes'].split(",")
 
-        v
-      }
+  records = location_codes.map do |location_code|
+    ##
+    # We are allowing for the possibility of
+    # a location code having two entries in $locations
+    data = []
+
+    # extract the label from $nypl_core
+    core_data = $nypl_core.check_sierra_location(location_code) || {}
+    label = core_data['label'] || nil
+    # iterate over locations to find any match(es)
+    $locations.select {|k,v| k.match? location_code}.each {|k,v|
+      # add in the label as assigned above
+      v[:label] = label
+      data << v
+    }
+    ##
+    # location_code could be in $nypl_core but missing in $locations
+    # add it to response here
+    data << { code: location_code, label: label, url: nil } if data.length == 0
+
+    [
+      location_code,
+      data
     ]
   end.to_h
-rescue StandardError
-    $logger.info 'Received error in fetch_locations_and_respond'
+rescue StandardError => e
+    $logger.warn "Received error in fetch_locations_and_respond. Message: #{e.message}"
     create_response(500, 'Failed to fetch locations by code')
 else
     create_response(200, records)
