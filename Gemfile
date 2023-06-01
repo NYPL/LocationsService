@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 gem 'aws-sdk-s3'
 gem 'nypl_ruby_util'
+gem "parallel", "~> 1.19"
 
 group :deployment do
     gem 'aws-sdk-cloudwatch'
@@ -18,3 +19,4 @@ end
 group :development do
   gem 'pry'
 end
+

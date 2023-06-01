@@ -103,6 +103,7 @@ DEPENDENCIES
   aws-sdk-s3
   mocha
   nypl_ruby_util
+  parallel (~> 1.19)
   pry
   rspec
   rubocop

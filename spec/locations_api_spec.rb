@@ -81,11 +81,10 @@ describe LocationsApi do
     it 'should populate location slug, hours and address' do
       stub_request(:get, 'https://drupal.nypl.org/jsonapi/node/library?jsonapi_include=1&filter%5Bfield_ts_location_code%5D=ma')
         .to_return(status: 200, body: File.read('spec/fixtures/location_api.json'))
-      @test_locations_api.get_location_data('ma')
-      expect(@test_locations_api.address).to eq({ line1: 'Fifth Avenue and 42nd Street', city: 'New York', state: 'NY', postalCode: '10018' })
-      puts @test_locations_api.address
-      expect(@test_locations_api.location_slug).to eq('schwarzman')
-      expect(@test_locations_api.hours).to eq([
+      locations_data = @test_locations_api.get_location_data('ma')
+      expect(locations_data[:address]).to eq({ line1: 'Fifth Avenue and 42nd Street', city: 'New York', state: 'NY', postalCode: '10018' })
+      expect(locations_data[:slug]).to eq('schwarzman')
+      expect(locations_data[:hours]).to eq([
         { day: 'Thursday', startTime: '2023-06-01T10:00:00+00:00', 
           endTime: '2023-06-01T18:00:00+00:00', today: true, nextBusinessDay: false },
         { day: 'Friday', startTime: '2023-06-02T10:00:00+00:00',

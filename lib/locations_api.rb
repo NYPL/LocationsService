@@ -2,6 +2,7 @@ require 'net/https'
 require 'uri'
 require 'json'
 require 'date'
+require 'parallel'
 
 class LocationsApi
   attr_accessor :hours, :location_slug, :address
@@ -11,18 +12,21 @@ class LocationsApi
     @today_of_the_week = @today.strftime('%A')
     @days_of_the_week =  %w[Sunday Monday Tuesday Wednesday Thursday Friday Saturday]
     @location_data = nil
-    @location_slug = ''
-    @hours = {}
-    @address = {}
+  end
+
+  def get_location_data_for_codes(location_codes)
+    Parallel.map(location_codes) { |code| get_location_data(code) }
   end
 
   def get_location_data(location_code)
     locations_uri = URI("https://drupal.nypl.org/jsonapi/node/library?jsonapi_include=1&filter%5Bfield_ts_location_code%5D=#{location_code}")
     response = Net::HTTP.get_response(locations_uri)
     @location_data = JSON.parse(response.body, { symbolize_names: true })[:data][0]
-    @location_slug = @location_data[:field_ts_slug]
-    @hours = build_hours_array(@location_data[:field_ohs_hours], @today)
-    @address = build_address(@location_data[:field_as_address])
+    {
+      slug: @location_data[:field_ts_slug],
+      hours: build_hours_array(@location_data[:field_ohs_hours], @today),
+      address: build_address(@location_data[:field_as_address])
+    }
   end
 
   def build_address(address_info)
