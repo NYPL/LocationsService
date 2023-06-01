@@ -14,17 +14,17 @@ def init
   $nypl_core = NyplCore.new
 
   begin
-      raise StandardError.new("missing bucket or locations file") unless ENV['BUCKET'] && ENV['LOCATIONS_FILE']
-      locations_response = $s3_client.get_object(bucket: ENV['BUCKET'], key: ENV['LOCATIONS_FILE'])
-      $locations = JSON.parse(
-        locations_response.body.string
-      )
-        .map {|k, v| [ Regexp.new(k.gsub('*', '.*')), { code: k, url: v } ]}
-        .to_h
+    raise StandardError, 'missing bucket or locations file' unless ENV['BUCKET'] && ENV['LOCATIONS_FILE']
 
+    locations_response = $s3_client.get_object(bucket: ENV['BUCKET'], key: ENV['LOCATIONS_FILE'])
+    $locations = JSON.parse(
+      locations_response.body.string
+    )
+                     .map { |k, v| [Regexp.new(k.gsub('*', '.*')), { code: k, url: v }] }
+                     .to_h
   rescue StandardError => e
-      $logger.info 'Received s3 error, unable to load locations file from s3', { message: e.message }
-      return create_response(500, 'unable to load necessary data from AWS S3')
+    $logger.info 'Received s3 error, unable to load locations file from s3', { message: e.message }
+    return create_response(500, 'unable to load necessary data from AWS S3')
   end
 
   $logger.debug 'Initialized function'
@@ -33,27 +33,32 @@ end
 
 # rubocop:disable Lint/UnusedMethodArgument
 def handle_event(event:, context:)
-    init
+  init
 
-    path = event['path']
-    method = event['httpMethod']
-    params = event['queryStringParameters']
+  path = event['path']
+  method = event['httpMethod']
+  params = event['queryStringParameters']
 
-    $logger.info('handling event', event)
+  $logger.info('handling event', event)
 
-    return create_response(501, 'LocationsService only implements GET endpoints') unless method == 'GET'
+  return create_response(501, 'LocationsService only implements GET endpoints') unless method == 'GET'
 
-    if path == '/docs/locations'
-        load_swagger_docs
-    elsif /\S+\/locations/.match? path
-        fetch_locations_and_respond params
-    else
-        create_response(404, "#{path} not found")
-    end
+  if path == '/docs/locations'
+    load_swagger_docs
+  elsif %r{\S+/locations}.match? path
+    fetch_locations_and_respond params
+  else
+    create_response(404, "#{path} not found")
+  end
 end
 
 def fetch_locations_and_respond(params)
-  location_codes = params['location_codes'].split(",")
+  print params
+  location_codes = params['location_codes'].split(',')
+  fields = params['fields'].nil? ? ['url'] : params['fields'].split(',')
+  if fields.include?('hours') && location_codes.length > 9
+    return create_response(400, "10 is the maximum number of location codes. #{location_codes.length} provided")
+  end
 
   records = location_codes.map do |location_code|
     ##
@@ -65,11 +70,11 @@ def fetch_locations_and_respond(params)
     core_data = $nypl_core.check_sierra_location(location_code) || {}
     label = core_data['label'] || nil
     # iterate over locations to find any match(es)
-    $locations.select {|k,v| k.match? location_code}.each {|k,v|
+    $locations.select { |k, _v| k.match? location_code }.each do |_k, v|
       # add in the label as assigned above
       v[:label] = label
       data << v
-    }
+    end
     ##
     # location_code could be in $nypl_core but missing in $locations
     # add it to response here
@@ -81,32 +86,32 @@ def fetch_locations_and_respond(params)
     ]
   end.to_h
 rescue StandardError => e
-    $logger.warn "Received error in fetch_locations_and_respond. Message: #{e.message}"
-    create_response(500, 'Failed to fetch locations by code')
+  $logger.warn "Received error in fetch_locations_and_respond. Message: #{e.message}"
+  create_response(500, 'Failed to fetch locations by code')
 else
-    create_response(200, records)
+  create_response(200, records)
 end
 
 def create_response(status_code = 200, body = nil)
-    $logger.info "Responding with #{status_code}"
+  $logger.info "Responding with #{status_code}"
 
-    {
-        statusCode: status_code,
-        body: JSON.dump(body),
-        isBase64Encoded: false,
-        headers: { 'Content-type': 'application/json' }
-    }
+  {
+    statusCode: status_code,
+    body: JSON.dump(body),
+    isBase64Encoded: false,
+    headers: { 'Content-type': 'application/json' }
+  }
 end
 
 def load_swagger_docs
-    swagger_docs = JSON.parse(File.read('./swagger.json'))
-    create_response(200, swagger_docs)
+  swagger_docs = JSON.parse(File.read('./swagger.json'))
+  create_response(200, swagger_docs)
 rescue JSON::JSONError => e
-    $logger.error 'Failed to parse Swagger documentation'
-    $logger.debug e.message
-    create_response(500, 'Unable to load Swagger docs from JSON')
+  $logger.error 'Failed to parse Swagger documentation'
+  $logger.debug e.message
+  create_response(500, 'Unable to load Swagger docs from JSON')
 rescue IOError => e
-    $logger.error 'Unable to load swagger documentation from file'
-    $logger.debug e.message
-    create_response(500, 'Unable to load Swagger docs from JSON')
+  $logger.error 'Unable to load swagger documentation from file'
+  $logger.debug e.message
+  create_response(500, 'Unable to load Swagger docs from JSON')
 end
