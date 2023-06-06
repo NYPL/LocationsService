@@ -5,11 +5,10 @@ require 'date'
 require 'parallel'
 
 class LocationsApi
-  attr_accessor :hours, :location_slug, :address
+  attr_accessor :hours, :location_slug, :address, :today
 
   def initialize
     @today = DateTime.now
-    @today_of_the_week = @today.strftime('%A')
     @days_of_the_week =  %w[Sunday Monday Tuesday Wednesday Thursday Friday Saturday]
     @location_data = nil
   end
@@ -66,7 +65,8 @@ class LocationsApi
   end
 
   def build_hours_array(hours_per_day, current_day)
-    arranged_hours_per_day = arrange_days(hours_per_day, @today_of_the_week)
+    today_of_the_week = current_day.strftime('%A')
+    arranged_hours_per_day = arrange_days(hours_per_day, today_of_the_week)
     arranged_hours_per_day.map.with_index do |day, i|
       hours_object = build_hours_object(day[:starthours], day[:endhours], current_day, i)
       # .succ returns the next day

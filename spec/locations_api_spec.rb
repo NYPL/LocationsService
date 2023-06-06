@@ -4,6 +4,8 @@ require_relative '../lib/locations_api'
 describe LocationsApi do
   before(:each) do
     @test_locations_api = LocationsApi.new
+    @today = DateTime.new(2023, 6, 1, 9, 0)
+    @test_locations_api.today = @today
   end
 
   describe '#arrange_days' do
@@ -43,17 +45,24 @@ describe LocationsApi do
 
   describe '#build_hours_array' do
     it 'should build hours array' do
-      today = DateTime.new(2023, 6, 1, 9, 0)
+      
       hours_per_day = [
+        # sunday
         { day: 0, all_day: false, starthours: 1300, endhours: 1700, comment: '' },
+        # monday
         { day: 1, all_day: false, starthours: 1000, endhours: 1800, comment: '' },
+        # tuesday
         { day: 2, all_day: false, starthours: 1000, endhours: 2000, comment: '' },
+        # wednesday
         { day: 3, all_day: false, starthours: 1000, endhours: 2000, comment: '' },
+        # thursday
         { day: 4, all_day: false, starthours: 1000, endhours: 1800, comment: '' },
+        # friday
         { day: 5, all_day: false, starthours: 1000, endhours: 1800, comment: '' },
+        # saturday
         { day: 6, all_day: false, starthours: 1000, endhours: 1800, comment: '' }
       ]
-      hours_array = @test_locations_api.build_hours_array(hours_per_day, today)
+      hours_array = @test_locations_api.build_hours_array(hours_per_day, @today)
       expect(hours_array).to eq [
         { day: 'Thursday', startTime: '2023-06-01T10:00:00+00:00', 
           endTime: '2023-06-01T18:00:00+00:00', today: true, nextBusinessDay: false },
@@ -74,10 +83,6 @@ describe LocationsApi do
   end
 
   describe 'get_location_data' do
-    before do
-      time = DateTime.new(2023, 6, 1, 9, 0)
-      allow(DateTime).to receive(:now).and_return(time)
-    end
     it 'should populate location slug, hours and address' do
       stub_request(:get, 'https://drupal.nypl.org/jsonapi/node/library?jsonapi_include=1&filter%5Bfield_ts_location_code%5D=ma')
         .to_return(status: 200, body: File.read('spec/fixtures/location_api.json'))
