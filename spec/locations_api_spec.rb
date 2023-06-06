@@ -4,8 +4,66 @@ require_relative '../lib/locations_api'
 describe LocationsApi do
   before(:each) do
     @test_locations_api = LocationsApi.new
+
     @today = DateTime.new(2023, 6, 1, 9, 0)
     @test_locations_api.today = @today
+  end
+
+  describe '#fetch_data' do
+    it 'should populate cache per branch' do
+      stub_request(:get, 'https://drupal.nypl.org/jsonapi/node/library?filter%5Bfield_ts_library_type%5D=research&page%5Boffset%5D=0&page%5Blimit%5D=125&sort=title&jsonapi_include=1')
+        .to_return(status: 200, body: File.read('spec/fixtures/location_api.json'))
+      cache = @test_locations_api.fetch_data
+      expect(cache.keys).to eq([:sc, :ma, :my, :last_cache_time])
+      expect(cache[:ma][:address]).to eq({ line1: 'Fifth Avenue and 42nd Street', city: 'New York', state: 'NY', postalCode: '10018' })
+      expect(cache[:ma][:slug]).to eq('schwarzman')
+      expect(cache[:ma][:hours]).to eq([
+        { day: 'Thursday', startTime: '2023-06-01T10:00:00+00:00',
+          endTime: '2023-06-01T18:00:00+00:00', today: true, nextBusinessDay: false },
+        { day: 'Friday', startTime: '2023-06-02T10:00:00+00:00',
+          endTime: '2023-06-02T18:00:00+00:00', today: false, nextBusinessDay: true },
+        { day: 'Saturday', startTime: '2023-06-03T10:00:00+00:00',
+          endTime: '2023-06-03T18:00:00+00:00', today: false, nextBusinessDay: false },
+        { day: 'Sunday', startTime: '2023-06-04T13:00:00+00:00',
+          endTime: '2023-06-04T17:00:00+00:00', today: false, nextBusinessDay: false  },
+        { day: 'Monday', startTime: '2023-06-05T10:00:00+00:00',
+          endTime: '2023-06-05T18:00:00+00:00', today: false, nextBusinessDay: false  },
+        { day: 'Tuesday', startTime: '2023-06-06T10:00:00+00:00',
+          endTime: '2023-06-06T20:00:00+00:00', today: false, nextBusinessDay: false  },
+        { day: 'Wednesday', startTime: '2023-06-07T10:00:00+00:00',
+          endTime: '2023-06-07T20:00:00+00:00', today: false, nextBusinessDay: false  }
+      ])
+
+      expect(cache[:last_cache_time]).to eq(@today.to_time.to_i)
+    end
+  end
+
+  describe 'get_location_data' do
+    it 'should fetch_data if cache was populated more than one hour ago' do
+      # set last_cache_time to two hours before @today
+      @test_locations_api.set_cache({
+        last_cache_time: (@today - (2/24.0)).to_time.to_i,
+        sc: 'cached_value'
+      })
+      allow(@test_locations_api).to receive(:fetch_data).and_return({sc: 'data from api'})
+      expect(@test_locations_api.get_location_data('sc456')).to eq 'data from api'
+    end
+    it 'should access the cache if it was populated less than one hour ago' do
+      # set last cache time to twenty minutes before @today
+      @test_locations_api.set_cache({
+        last_cache_time: (@today - (20 / 1440.0)).to_time.to_i,
+        sc: 'cached_value'
+      })
+      new_cache = @test_locations_api.get_location_data('sc123')
+      expect(new_cache).to eq 'cached_value'
+      expect(@test_locations_api.get_cache[:last_cache_time]).to eq (@today - (20 / 1440.0)).to_time.to_i
+    end
+    it 'should access the same cache when api is reinstatiated' do
+      new_api = LocationsApi.new
+      new_api.today = @today
+      expect(new_api.get_location_data('sc123')).to eq 'cached_value'
+      expect(new_api.get_cache[:last_cache_time]).to eq (@today - (20 / 1440.0)).to_time.to_i
+    end
   end
 
   describe '#arrange_days' do
@@ -45,7 +103,6 @@ describe LocationsApi do
 
   describe '#build_hours_array' do
     it 'should build hours array' do
-      
       hours_per_day = [
         # sunday
         { day: 0, all_day: false, starthours: 1300, endhours: 1700, comment: '' },
@@ -64,7 +121,7 @@ describe LocationsApi do
       ]
       hours_array = @test_locations_api.build_hours_array(hours_per_day, @today)
       expect(hours_array).to eq [
-        { day: 'Thursday', startTime: '2023-06-01T10:00:00+00:00', 
+        { day: 'Thursday', startTime: '2023-06-01T10:00:00+00:00',
           endTime: '2023-06-01T18:00:00+00:00', today: true, nextBusinessDay: false },
         { day: 'Friday', startTime: '2023-06-02T10:00:00+00:00',
           endTime: '2023-06-02T18:00:00+00:00', today: false, nextBusinessDay: true },
@@ -79,32 +136,6 @@ describe LocationsApi do
         { day: 'Wednesday', startTime: '2023-06-07T10:00:00+00:00',
           endTime: '2023-06-07T20:00:00+00:00', today: false, nextBusinessDay: false  }
       ]
-    end
-  end
-
-  describe 'get_location_data' do
-    it 'should populate location slug, hours and address' do
-      stub_request(:get, 'https://drupal.nypl.org/jsonapi/node/library?jsonapi_include=1&filter%5Bfield_ts_location_code%5D=ma')
-        .to_return(status: 200, body: File.read('spec/fixtures/location_api.json'))
-      locations_data = @test_locations_api.get_location_data('ma')
-      expect(locations_data[:address]).to eq({ line1: 'Fifth Avenue and 42nd Street', city: 'New York', state: 'NY', postalCode: '10018' })
-      expect(locations_data[:slug]).to eq('schwarzman')
-      expect(locations_data[:hours]).to eq([
-        { day: 'Thursday', startTime: '2023-06-01T10:00:00+00:00', 
-          endTime: '2023-06-01T18:00:00+00:00', today: true, nextBusinessDay: false },
-        { day: 'Friday', startTime: '2023-06-02T10:00:00+00:00',
-          endTime: '2023-06-02T18:00:00+00:00', today: false, nextBusinessDay: true },
-        { day: 'Saturday', startTime: '2023-06-03T10:00:00+00:00',
-          endTime: '2023-06-03T18:00:00+00:00', today: false, nextBusinessDay: false },
-        { day: 'Sunday', startTime: '2023-06-04T13:00:00+00:00',
-          endTime: '2023-06-04T17:00:00+00:00', today: false, nextBusinessDay: false  },
-        { day: 'Monday', startTime: '2023-06-05T10:00:00+00:00',
-          endTime: '2023-06-05T18:00:00+00:00', today: false, nextBusinessDay: false  },
-        { day: 'Tuesday', startTime: '2023-06-06T10:00:00+00:00',
-          endTime: '2023-06-06T20:00:00+00:00', today: false, nextBusinessDay: false  },
-        { day: 'Wednesday', startTime: '2023-06-07T10:00:00+00:00',
-          endTime: '2023-06-07T20:00:00+00:00', today: false, nextBusinessDay: false  }
-      ])
     end
   end
 end

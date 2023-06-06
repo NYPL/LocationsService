@@ -5,7 +5,17 @@ require 'date'
 require 'parallel'
 
 class LocationsApi
-  attr_accessor :hours, :location_slug, :address, :today
+  attr_accessor :today, :cache
+
+  @@cache = {}
+
+  def get_cache
+    @@cache
+  end
+
+  def set_cache(new_cache)
+    @@cache = new_cache
+  end
 
   def initialize
     @today = DateTime.now
@@ -13,19 +23,31 @@ class LocationsApi
     @location_data = nil
   end
 
-  def get_location_data_for_codes(location_codes)
-    Parallel.map(location_codes) { |code| get_location_data(code) }
+  def fetch_data()
+    locations_uri = URI('https://drupal.nypl.org/jsonapi/node/library?filter%5Bfield_ts_library_type%5D=research&page%5Boffset%5D=0&page%5Blimit%5D=125&sort=title&jsonapi_include=1')
+    response = Net::HTTP.get_response(locations_uri)
+    @location_data = JSON.parse(response.body, { symbolize_names: true })[:data]
+    new_cache = {}
+    @location_data.each do |branch|
+      new_cache[branch[:field_ts_location_code].to_sym] = {
+        slug: branch[:field_ts_slug],
+        hours: build_hours_array(branch[:field_ohs_hours], @today),
+        address: build_address(branch[:field_as_address])
+      }
+    end
+    new_cache[:last_cache_time] = @today.to_time.to_i
+    new_cache
   end
 
+  # Expects a location code in the format mal99. Returns a hash with a slug, hours, and address corresponding
+  # to that location code. Before making an api call, checks cache.
   def get_location_data(location_code)
-    locations_uri = URI("https://drupal.nypl.org/jsonapi/node/library?jsonapi_include=1&filter%5Bfield_ts_location_code%5D=#{location_code}")
-    response = Net::HTTP.get_response(locations_uri)
-    @location_data = JSON.parse(response.body, { symbolize_names: true })[:data][0]
-    {
-      slug: @location_data[:field_ts_slug],
-      hours: build_hours_array(@location_data[:field_ohs_hours], @today),
-      address: build_address(@location_data[:field_as_address])
-    }
+    time_offset = @today.to_time.to_i - @@cache[:last_cache_time]
+    if @@cache.key?(:last_cache_time) && (time_offset > 3600)
+      @@cache = fetch_data
+    end
+    trimmed_location_code = location_code[0..1].to_sym
+    @@cache[trimmed_location_code]
   end
 
   def build_address(address_info)
