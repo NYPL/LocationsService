@@ -3,6 +3,7 @@ require 'aws-sdk-s3'
 require 'json'
 
 require_relative 'lib/nypl_core'
+require_relative 'lib/locations_api'
 
 def init
   return if $initialized
@@ -55,11 +56,9 @@ end
 def fetch_locations_and_respond(params)
   print params
   location_codes = params['location_codes'].split(',')
-  fields = params['fields'].nil? ? ['url'] : params['fields'].split(',')
-  if fields.include?('hours') && location_codes.length > 9
-    return create_response(400, "10 is the maximum number of location codes. #{location_codes.length} provided")
-  end
+  fields = params['fields'].split(',') unless params['fields'].nil?
 
+  locations_api = LocationsApi.new
   records = location_codes.map do |location_code|
     ##
     # We are allowing for the possibility of
@@ -75,11 +74,15 @@ def fetch_locations_and_respond(params)
       v[:label] = label
       data << v
     end
+
+    data_obj = { code: location_code, label: label, url: nil }
+    hours_and_location_data = locations_api.get_location_data(location_code)
+    data_obj[:hours] = hours_and_location_data[:hours] if !fields.nil? && fields.includes?('hours')
+    data_obj[:location] = hours_and_location_data[:location] if !fields.nil? && fields.includes?('location')
     ##
     # location_code could be in $nypl_core but missing in $locations
     # add it to response here
-    data << { code: location_code, label: label, url: nil } if data.length == 0
-
+    data << data_obj if data.length.zero?
     [
       location_code,
       data

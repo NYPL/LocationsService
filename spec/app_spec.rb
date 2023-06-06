@@ -177,11 +177,4 @@ describe 'fetch_locations_and_respond' do
       }
     )
   end
-
-  it 'should return a 400 if there are more than 10 location codes and fields includes hours' do
-    expect(
-      fetch_locations_and_respond({ 'location_codes'=> '1,2,3,4,5,6,7,8,9,10,11',
-                                    'fields'=> 'hours,url' })
-    ).to eq(create_response(400, "10 is the maximum number of location codes. 11 provided"))
-  end
 end
