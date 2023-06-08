@@ -53,6 +53,9 @@ def handle_event(event:, context:)
 end
 
 def parse_params(params)
+  if params['location_codes'].nil?
+    raise StandardError.new 'No location codes provided.'
+  end
   hours_query = false
   location_query = false
   url_query = false
@@ -93,16 +96,15 @@ def build_location_info_objects(url_query, location_code)
   # a location code having two entries in $locations
   # iterate over locations to find any match(es)
   data = $locations.select do |location_code_key, _url|
-    Regexp.new(location_code_key.gsub('*', '.*')).match? location_code
-  end
+           Regexp.new('^'+location_code_key.gsub('*', '.*')).match? location_code
+         end
                    .map do |location_code_key, url_value|
     location_info = { label: label, code: location_code_key }
     location_info[:url] = url_value if url_query
     location_info
   end
-  ##
-  # location_code could be in $nypl_core but missing in $locations
-  # add it to response here
+  # if location_code is missing in s3 locations lookup, we still want to
+  # include it in response, so create object here:
   data = [{ code: location_code, url: nil, label: label }] if data.length.zero?
   data
 end

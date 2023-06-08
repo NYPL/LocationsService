@@ -135,11 +135,7 @@ describe 'fetch_locations_and_respond' do
       JSON.parse(response[:body], { symbolize_names: true })
     ).to eq({
               ct: [
-                {
-                  code: 'ct*',
-                  label: 'Fake Park',
-                  url: 'http://fakewithcoredata.com'
-                }
+                { code: 'ct*', label: 'Fake Park', url: 'http://fakewithcoredata.com' }
               ],
               al: [
                 {
@@ -155,15 +151,7 @@ describe 'fetch_locations_and_respond' do
     response = fetch_locations_and_respond({ 'location_codes' => 'sa' })
     expect(
       JSON.parse(response[:body], { symbolize_names: true })
-    ).to eq({
-              sa: [
-                {
-                  code: 'sa',
-                  label: 'St. A',
-                  url: nil
-                }
-              ]
-            })
+    ).to eq({ sa: [{ code: 'sa', label: 'St. A', url: nil }] })
   end
   it 'should return hours when hours is provided as param' do
     expect_any_instance_of(LocationsApi)
@@ -178,8 +166,67 @@ describe 'fetch_locations_and_respond' do
       .to receive(:get_location_data)
       .and_return({ hours: 'hours obj', location: 'address obj' })
     data = JSON.parse(fetch_locations_and_respond({ 'location_codes' => 'sc', 'fields' => 'hours,location' })[:body])
-    puts data['sc']
     expect(data['sc'][0]['hours']).to eq 'hours obj'
     expect(data['sc'][0]['location']).to eq 'address obj'
+  end
+end
+
+# build_location_info_objects
+describe 'build_location_info_objects' do
+  it 'should not include url if url_query is false' do
+    data = build_location_info_objects(false, 'ag')
+    expect(data).to eq([{ code: 'ag*', label: nil }])
+  end
+  it 'if not in locations S3, should still return label from NYPL core, if available' do
+    data = build_location_info_objects(true, 'sa')
+    expect(data).to eq([{ code: 'sa', label: 'St. A', url: nil }])
+  end
+  it 'should return the correctly mapped locations with label set to `nil`, if label not available' do
+    data = build_location_info_objects(true, 'ag')
+    expect(data).to match([{ code: 'ag*', url: 'http://fake.com', label: nil }])
+  end
+  it 'should not match on location codes that do not start with the location_code_key' do
+    data = build_location_info_objects(true, 'mag')
+    expect(data[0].keys).not_to include('ag*')
+  end
+end
+
+describe 'parse_params' do
+  it 'returns an array of trues and an array' do
+    expect(parse_params({ 'fields' => 'location,hours,url',
+                          'location_codes' => 'ma,sc,my' })).to eq([true, true, true, %w[ma sc my]])
+  end
+  it 'returns an array of mixed values and an array' do
+    expect(parse_params({ 'fields' => 'location,url',
+                          'location_codes' => 'ma,sc,my' })).to eq([false, true, true, %w[ma sc my]])
+  end
+  it 'raises an error if no location_codes param' do
+    expect { parse_params({ 'fields' => 'location,hours,url' }) }.to raise_error(StandardError)
+  end
+end
+
+describe 'add_hours_and_location' do
+  hours = true
+  location = true
+  before do
+    expect_any_instance_of(LocationsApi)
+      .to receive(:get_location_data)
+      .and_return({ hours: 'hours', location: 'address' })
+  end
+  it 'attaches hours and location to array elements' do
+    expect(add_hours_and_location('xx', [{}, {}], hours, location)).to eq(
+      [
+        { hours: 'hours', location: 'address' },
+        { hours: 'hours', location: 'address' }
+      ]
+    )
+  end
+  it 'can handle an empty array' do
+    expect(add_hours_and_location('xx', [], hours, location))
+      .to eq([])
+  end
+  it 'does not change array if hours and location queries are false' do
+    expect(add_hours_and_location('xx', [{},{}], false, false))
+      .to eq([{}, {}])
   end
 end
