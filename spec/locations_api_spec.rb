@@ -19,19 +19,19 @@ describe LocationsApi do
       expect(cache[:ma][:slug]).to eq('schwarzman')
       expect(cache[:ma][:hours]).to eq([
         { day: 'Thursday', startTime: '2023-06-01T10:00:00+00:00',
-          endTime: '2023-06-01T18:00:00+00:00', today: true, nextBusinessDay: false },
+          endTime: '2023-06-01T18:00:00+00:00', today: true },
         { day: 'Friday', startTime: '2023-06-02T10:00:00+00:00',
-          endTime: '2023-06-02T18:00:00+00:00', today: false, nextBusinessDay: true },
+          endTime: '2023-06-02T18:00:00+00:00', nextBusinessDay: true },
         { day: 'Saturday', startTime: '2023-06-03T10:00:00+00:00',
-          endTime: '2023-06-03T18:00:00+00:00', today: false, nextBusinessDay: false },
+          endTime: '2023-06-03T18:00:00+00:00' },
         { day: 'Sunday', startTime: '2023-06-04T13:00:00+00:00',
-          endTime: '2023-06-04T17:00:00+00:00', today: false, nextBusinessDay: false  },
+          endTime: '2023-06-04T17:00:00+00:00'  },
         { day: 'Monday', startTime: '2023-06-05T10:00:00+00:00',
-          endTime: '2023-06-05T18:00:00+00:00', today: false, nextBusinessDay: false  },
+          endTime: '2023-06-05T18:00:00+00:00'  },
         { day: 'Tuesday', startTime: '2023-06-06T10:00:00+00:00',
-          endTime: '2023-06-06T20:00:00+00:00', today: false, nextBusinessDay: false  },
+          endTime: '2023-06-06T20:00:00+00:00'  },
         { day: 'Wednesday', startTime: '2023-06-07T10:00:00+00:00',
-          endTime: '2023-06-07T20:00:00+00:00', today: false, nextBusinessDay: false  }
+          endTime: '2023-06-07T20:00:00+00:00'  }
       ])
 
       expect(cache[:last_cache_time]).to eq(@today.to_time.to_i)
@@ -122,19 +122,19 @@ describe LocationsApi do
       hours_array = @test_locations_api.build_hours_array(hours_per_day, @today)
       expect(hours_array).to eq [
         { day: 'Thursday', startTime: '2023-06-01T10:00:00+00:00',
-          endTime: '2023-06-01T18:00:00+00:00', today: true, nextBusinessDay: false },
+          endTime: '2023-06-01T18:00:00+00:00', today: true },
         { day: 'Friday', startTime: '2023-06-02T10:00:00+00:00',
-          endTime: '2023-06-02T18:00:00+00:00', today: false, nextBusinessDay: true },
+          endTime: '2023-06-02T18:00:00+00:00', nextBusinessDay: true },
         { day: 'Saturday', startTime: '2023-06-03T10:00:00+00:00',
-          endTime: '2023-06-03T18:00:00+00:00', today: false, nextBusinessDay: false },
+          endTime: '2023-06-03T18:00:00+00:00' },
         { day: 'Sunday', startTime: '2023-06-04T13:00:00+00:00',
-          endTime: '2023-06-04T17:00:00+00:00', today: false, nextBusinessDay: false  },
+          endTime: '2023-06-04T17:00:00+00:00'  },
         { day: 'Monday', startTime: '2023-06-05T10:00:00+00:00',
-          endTime: '2023-06-05T18:00:00+00:00', today: false, nextBusinessDay: false  },
+          endTime: '2023-06-05T18:00:00+00:00'  },
         { day: 'Tuesday', startTime: '2023-06-06T10:00:00+00:00',
-          endTime: '2023-06-06T20:00:00+00:00', today: false, nextBusinessDay: false  },
+          endTime: '2023-06-06T20:00:00+00:00'  },
         { day: 'Wednesday', startTime: '2023-06-07T10:00:00+00:00',
-          endTime: '2023-06-07T20:00:00+00:00', today: false, nextBusinessDay: false  }
+          endTime: '2023-06-07T20:00:00+00:00'  }
       ]
     end
   end

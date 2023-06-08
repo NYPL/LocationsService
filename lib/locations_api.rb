@@ -79,13 +79,14 @@ class LocationsApi
   end
 
   def build_hours_object(start_time, end_time, day, index)
-    {
+    hours = {
       'day': day.strftime('%A'),
       'startTime': build_day_string(start_time, day).to_s,
-      'endTime': build_day_string(end_time, day).to_s,
-      'today': index.zero?,
-      'nextBusinessDay': index == 1
+      'endTime': build_day_string(end_time, day).to_s
     }
+    hours[:today] = true if index.zero?
+    hours[:nextBusinessDay] = true if index == 1
+    hours
   end
 
   # build an an array with opening and closing timestamps for every day of the next week,
