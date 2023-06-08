@@ -43,8 +43,9 @@ class LocationsApi
   # Expects a location code in the format mal99. Returns a hash with a slug, hours, and address corresponding
   # to that location code. Before making an api call, checks cache.
   def get_location_data(location_code)
-    if @@cache.key?(:last_cache_time) && (@today.to_time.to_i - @@cache[:last_cache_time] > 3600)
-
+    new_cache = !@@cache.key?(:last_cache_time)
+    cache_timed_out = !new_cache && @today.to_time.to_i - @@cache[:last_cache_time] > 3600
+    if new_cache || cache_timed_out
       @@cache = fetch_data
     end
     trimmed_location_code = location_code[0..1].to_sym
@@ -87,12 +88,15 @@ class LocationsApi
     }
   end
 
+  # build an an array with opening and closing timestamps for every day of the next week,
+  # starting with today
   def build_hours_array(hours_per_day, current_day)
     # get the day of the week by human readable name
     today_of_the_week = current_day.strftime('%A')
     # arrange the hours per day array into an order starting with today_of_the_week
     arranged_hours_per_day = arrange_days(hours_per_day, today_of_the_week)
-    # loop over that array, creating full timestamps for the hours provided using current_day. current_day starts off as today and is incremented as we iterate over the array.
+    # loop over that array, creating full timestamps for the hours provided using current_day.
+    # current_day starts off as @today and is incremented as we iterate over the array.
     arranged_hours_per_day.map.with_index do |day, i|
       hours_object = build_hours_object(day[:starthours], day[:endhours], current_day, i)
       # .succ returns the next day

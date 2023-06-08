@@ -13,6 +13,7 @@ def init
   s3_config[:profile] = ENV['PROFILE'] if ENV['PROFILE']
   $s3_client = Aws::S3::Client.new(s3_config)
   $nypl_core = NyplCore.new
+  $locations_api = LocationsApi.new
 
   begin
     raise StandardError, 'missing bucket or locations file' unless ENV['BUCKET'] && ENV['LOCATIONS_FILE']
@@ -21,8 +22,6 @@ def init
     $locations = JSON.parse(
       locations_response.body.string
     )
-                     .map { |k, v| [Regexp.new(k.gsub('*', '.*')), { code: k, url: v }] }
-                     .to_h
   rescue StandardError => e
     $logger.info 'Received s3 error, unable to load locations file from s3', { message: e.message }
     return create_response(500, 'unable to load necessary data from AWS S3')
@@ -53,39 +52,30 @@ def handle_event(event:, context:)
   end
 end
 
-def fetch_locations_and_respond(params)
-  print params
+def parse_params(params)
+  hours_query = false
+  location_query = false
+  url_query = false
+
+  if !params['fields'].nil?
+    fields = params['fields'].split(',')
+    hours_query = fields.include?('hours')
+    location_query = fields.include?('location')
+    url_query = fields.include?('url')
+  else
+    url_query = true
+  end
   location_codes = params['location_codes'].split(',')
-  fields = params['fields'].split(',') unless params['fields'].nil?
+  [hours_query, location_query, url_query, location_codes]
+end
 
-  locations_api = LocationsApi.new
+def fetch_locations_and_respond(params)
+  hours_query, location_query, url_query, location_codes = parse_params params
   records = location_codes.map do |location_code|
-    ##
-    # We are allowing for the possibility of
-    # a location code having two entries in $locations
-    data = []
-
-    # extract the label from $nypl_core
-    core_data = $nypl_core.check_sierra_location(location_code) || {}
-    label = core_data['label'] || nil
-    # iterate over locations to find any match(es)
-    $locations.select { |k, _v| k.match? location_code }.each do |_k, v|
-      # add in the label as assigned above
-      v[:label] = label
-      data << v
-    end
-
-    data_obj = { code: location_code, label: label, url: nil }
-    hours_and_location_data = locations_api.get_location_data(location_code)
-    data_obj[:hours] = hours_and_location_data[:hours] if !fields.nil? && fields.includes?('hours')
-    data_obj[:location] = hours_and_location_data[:location] if !fields.nil? && fields.includes?('location')
-    ##
-    # location_code could be in $nypl_core but missing in $locations
-    # add it to response here
-    data << data_obj if data.length.zero?
+    data = build_location_info_objects(url_query, location_code)
     [
       location_code,
-      data
+      add_hours_and_location(location_code, data, hours_query, location_query)
     ]
   end.to_h
 rescue StandardError => e
@@ -93,6 +83,40 @@ rescue StandardError => e
   create_response(500, 'Failed to fetch locations by code')
 else
   create_response(200, records)
+end
+
+def build_location_info_objects(url_query, location_code)
+  # extract the label from $nypl_core
+  core_data = $nypl_core.check_sierra_location(location_code) || {}
+  label = core_data['label'] || nil
+  # We are allowing for the possibility of
+  # a location code having two entries in $locations
+  # iterate over locations to find any match(es)
+  data = $locations.select do |location_code_key, _url|
+    Regexp.new(location_code_key.gsub('*', '.*')).match? location_code
+  end
+                   .map do |location_code_key, url_value|
+    location_info = { label: label, code: location_code_key }
+    location_info[:url] = url_value if url_query
+    location_info
+  end
+  ##
+  # location_code could be in $nypl_core but missing in $locations
+  # add it to response here
+  data = [{ code: location_code, url: nil, label: label }] if data.length.zero?
+  data
+end
+
+def add_hours_and_location(location_code, data, hours_query, location_query)
+  # fetch hours and location info from drupal locations api
+  hours_and_location_data = $locations_api.get_location_data(location_code)
+  # the hours and location for two location codes starting with the same letters
+  # will be the same, so add the same information to each element
+  data.map do |location_info|
+    location_info[:hours] = hours_and_location_data[:hours] if hours_query
+    location_info[:location] = hours_and_location_data[:location] if location_query
+    location_info
+  end
 end
 
 def create_response(status_code = 200, body = nil)

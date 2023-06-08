@@ -26,9 +26,9 @@ describe :init do
     expect($s3_client).to eq(mock_s3)
     expect($locations).to eq(
       {
-        /ag.*/ => { code: 'ag*', url: 'http://fake.com' },
-        /al.*/ => { code: 'al*', url: 'http://fakefake.com' },
-        /ct.*/ => { code: 'ct*', url: 'http://fakewithcoredata.com' }
+        'ag*' => 'http://fake.com',
+        'al*' => 'http://fakefake.com',
+        'ct*' => 'http://fakewithcoredata.com'
       }
     )
     expect($initialized).to eq(true)
@@ -95,86 +95,91 @@ describe :handle_event do
 end
 
 describe 'fetch_locations_and_respond' do
-  it 'should return the correctly mapped locations with label set to `nil`, if label not available' do
-    expect(
-      fetch_locations_and_respond({ 'location_codes' => 'ag,al' })
-    ).to eq(
-      {
-        body: {
-          'ag' => [
-            {
-              code: 'ag*',
-              url: 'http://fake.com',
-              label: nil
-            }
-          ],
-          'al' => [
-            {
-              code: 'al*',
-              url: 'http://fakefake.com',
-              label: nil
-            }
-          ]
-        }.to_json,
+  before(:each) do
+    stub_request(:get, 'https://drupal.nypl.org/jsonapi/node/library?filter%5Bfield_ts_library_type%5D=research&jsonapi_include=1&page%5Blimit%5D=125&page%5Boffset%5D=0&sort=title')
+      .with(
         headers: {
-          "Content-type": 'application/json'
-        },
-        isBase64Encoded: false,
-        statusCode: 200
-      }
-    )
+          'Accept' => '*/*',
+          'Accept-Encoding' => 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3',
+          'Host' => 'drupal.nypl.org',
+          'User-Agent' => 'Ruby'
+        }
+      )
+      .to_return(status: 200, body: File.read('spec/fixtures/location_api.json'), headers: {})
+  end
+  it 'should return the correctly mapped locations with label set to `nil`, if label not available' do
+    response = fetch_locations_and_respond({ 'location_codes' => 'ag,al' })
+    expect(
+      JSON.parse(response[:body], { symbolize_names: true })
+    ).to match({
+                 ag: [
+                   {
+                     code: 'ag*',
+                     url: 'http://fake.com',
+                     label: nil
+                   }
+                 ],
+                 al: [
+                   {
+                     code: 'al*',
+                     url: 'http://fakefake.com',
+                     label: nil
+                   }
+                 ]
+               })
   end
 
   it 'should return the correctly mapped locations with label from NYPL core, if available' do
+    response = fetch_locations_and_respond({ 'location_codes' => 'ct,al' })
     expect(
-      fetch_locations_and_respond({ 'location_codes' => 'ct,al' })
-    ).to eq(
-      {
-        body: {
-          'ct' => [
-            {
-              code: 'ct*',
-              url: 'http://fakewithcoredata.com',
-              label: 'Fake Park'
-            }
-          ],
-          'al' => [
-            {
-              code: 'al*',
-              url: 'http://fakefake.com',
-              label: nil
-            }
-          ]
-        }.to_json,
-        headers: {
-          "Content-type": 'application/json'
-        },
-        isBase64Encoded: false,
-        statusCode: 200
-      }
-    )
+      JSON.parse(response[:body], { symbolize_names: true })
+    ).to eq({
+              ct: [
+                {
+                  code: 'ct*',
+                  label: 'Fake Park',
+                  url: 'http://fakewithcoredata.com'
+                }
+              ],
+              al: [
+                {
+                  code: 'al*',
+                  label: nil,
+                  url: 'http://fakefake.com'
+                }
+              ]
+            })
   end
 
   it 'if not in locations S3, should still return label from NYPL core, if available' do
+    response = fetch_locations_and_respond({ 'location_codes' => 'sa' })
     expect(
-      fetch_locations_and_respond({ 'location_codes' => 'sa' })
-    ).to eq(
-      {
-        body: {
-          'sa' => [
-            {
-              code: 'sa',
-              label: 'St. A',
-              url: nil
-            }
-          ]
-        }.to_json,
-        headers: {
-          "Content-type": 'application/json'
-        },
-        isBase64Encoded: false,
-        statusCode: 200
-      }
-    )
+      JSON.parse(response[:body], { symbolize_names: true })
+    ).to eq({
+              sa: [
+                {
+                  code: 'sa',
+                  label: 'St. A',
+                  url: nil
+                }
+              ]
+            })
+  end
+  it 'should return hours when hours is provided as param' do
+    expect_any_instance_of(LocationsApi)
+      .to receive(:get_location_data)
+      .and_return({ hours: 'hours obj', location: 'address obj' })
+    data = JSON.parse(fetch_locations_and_respond({ 'location_codes' => 'sc', 'fields' => 'hours' })[:body])
+    expect(data['sc'][0]['hours']).to eq 'hours obj'
+    expect(data['sc'][0]['location'].nil?).to eq true
+  end
+  it 'should return hours and location when provided as params' do
+    expect_any_instance_of(LocationsApi)
+      .to receive(:get_location_data)
+      .and_return({ hours: 'hours obj', location: 'address obj' })
+    data = JSON.parse(fetch_locations_and_respond({ 'location_codes' => 'sc', 'fields' => 'hours,location' })[:body])
+    puts data['sc']
+    expect(data['sc'][0]['hours']).to eq 'hours obj'
+    expect(data['sc'][0]['location']).to eq 'address obj'
   end
 end
