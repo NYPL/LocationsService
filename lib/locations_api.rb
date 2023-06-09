@@ -2,7 +2,6 @@ require 'net/https'
 require 'uri'
 require 'json'
 require 'date'
-require 'parallel'
 
 class LocationsApi
   attr_accessor :today, :cache
@@ -19,7 +18,7 @@ class LocationsApi
 
   def initialize
     @today = DateTime.now
-    @days_of_the_week =  %w[Sunday Monday Tuesday Wednesday Thursday Friday Saturday]
+    @days_of_the_week = %w[Sunday Monday Tuesday Wednesday Thursday Friday Saturday]
     @location_data = nil
   end
 
@@ -62,7 +61,7 @@ class LocationsApi
   end
 
   def arrange_days(hours_per_day, today_of_the_week)
-    # make sure days are in correct order
+    # make sure days are in correct order. the day property is a number 0-6
     hours_per_day = hours_per_day.sort_by { |day| day[:day] }
     # find the day object that contains today
     day_index = hours_per_day.index { |day| day[:day] == @days_of_the_week.index(today_of_the_week) }
@@ -74,15 +73,15 @@ class LocationsApi
     end
   end
 
-  def build_day_string(time, day)
+  def build_timestamp(time, day)
     DateTime.new(day.year, day.month, day.day, time / 100, time % 100)
   end
 
-  def build_hours_object(start_time, end_time, day, index)
+  def build_hours_hash(start_time, end_time, day, index)
     hours = {
       'day': day.strftime('%A'),
-      'startTime': build_day_string(start_time, day).to_s,
-      'endTime': build_day_string(end_time, day).to_s
+      'startTime': build_timestamp(start_time, day).to_s,
+      'endTime': build_timestamp(end_time, day).to_s
     }
     hours[:today] = true if index.zero?
     hours[:nextBusinessDay] = true if index == 1
@@ -96,13 +95,14 @@ class LocationsApi
     today_of_the_week = current_day.strftime('%A')
     # arrange the hours per day array into an order starting with today_of_the_week
     arranged_hours_per_day = arrange_days(hours_per_day, today_of_the_week)
-    # loop over that array, creating full timestamps for the hours provided using current_day.
-    # current_day starts off as @today and is incremented as we iterate over the array.
+    # loop over that array, creating full timestamps for the start and endhours using 
+    # current_day as the date. current_day starts off as @today and is incremented 
+    # by one day for each iteration of the array.
     arranged_hours_per_day.map.with_index do |day, i|
-      hours_object = build_hours_object(day[:starthours], day[:endhours], current_day, i)
+      hours_hash = build_hours_hash(day[:starthours], day[:endhours], current_day, i)
       # .succ returns the next day
       current_day = current_day.succ
-      hours_object
+      hours_hash
     end
   end
 end

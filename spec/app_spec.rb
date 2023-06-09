@@ -171,22 +171,22 @@ describe 'fetch_locations_and_respond' do
   end
 end
 
-# build_location_info_objects
-describe 'build_location_info_objects' do
+# build_location_info_hashes
+describe 'build_location_info_hashes' do
   it 'should not include url if url_query is false' do
-    data = build_location_info_objects(false, 'ag')
+    data = build_location_info_hashes(false, 'ag')
     expect(data).to eq([{ code: 'ag*', label: nil }])
   end
   it 'if not in locations S3, should still return label from NYPL core, if available' do
-    data = build_location_info_objects(true, 'sa')
+    data = build_location_info_hashes(true, 'sa')
     expect(data).to eq([{ code: 'sa', label: 'St. A', url: nil }])
   end
   it 'should return the correctly mapped locations with label set to `nil`, if label not available' do
-    data = build_location_info_objects(true, 'ag')
+    data = build_location_info_hashes(true, 'ag')
     expect(data).to match([{ code: 'ag*', url: 'http://fake.com', label: nil }])
   end
   it 'should not match on location codes that do not start with the location_code_key' do
-    data = build_location_info_objects(true, 'mag')
+    data = build_location_info_hashes(true, 'mag')
     expect(data[0].keys).not_to include('ag*')
   end
 end

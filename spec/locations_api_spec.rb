@@ -92,11 +92,11 @@ describe LocationsApi do
     end
   end
 
-  describe '#build_day_string' do
+  describe '#build_timestamp' do
     it 'should return day with new time' do
       time = 1350
       day = DateTime.now
-      built_day = @test_locations_api.build_day_string(time, day)
+      built_day = @test_locations_api.build_timestamp(time, day)
       expect(built_day.to_s).to include('T13:50')
     end
   end

@@ -75,7 +75,7 @@ end
 def fetch_locations_and_respond(params)
   hours_query, location_query, url_query, location_codes = parse_params params
   records = location_codes.map do |location_code|
-    data = build_location_info_objects(url_query, location_code)
+    data = build_location_info_hashes(url_query, location_code)
     [
       location_code,
       add_hours_and_location(location_code, data, hours_query, location_query)
@@ -88,7 +88,7 @@ else
   create_response(200, records)
 end
 
-def build_location_info_objects(url_query, location_code)
+def build_location_info_hashes(url_query, location_code)
   # extract the label from $nypl_core
   core_data = $nypl_core.check_sierra_location(location_code) || {}
   label = core_data['label'] || nil
