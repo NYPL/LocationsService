@@ -24,6 +24,7 @@ class LocationsApi
 
   def fetch_data()
     locations_uri = URI('https://drupal.nypl.org/jsonapi/node/library?filter%5Bfield_ts_library_type%5D=research&page%5Boffset%5D=0&page%5Blimit%5D=125&sort=title&jsonapi_include=1')
+    # for an example of api response, see spec/fixtures/location_api.json
     response = Net::HTTP.get_response(locations_uri)
     @location_data = JSON.parse(response.body, { symbolize_names: true })[:data]
     new_cache = {}
@@ -41,6 +42,18 @@ class LocationsApi
 
   # Expects a location code in the format mal99. Returns a hash with a slug, hours, and address corresponding
   # to that location code. Before making an api call, checks cache.
+  #     example return value:
+  #   {slug: 'schwarzman',
+  #    hours: [{startTime: '2023-06-01T10:00:00+00:00',
+  #             endtime: '2023-06-01T18:00:00+00:00',
+  #             day: 'Thursday',
+  #             today: 'true'},...(5)],
+  #    address:  {
+  #                'line1': 'Fifth Avenue and 42nd Street',
+  #                'city': 'New York',
+  #                'state': 'NY',
+  #                'postalCode': '10018'
+  #              }
   def get_location_data(location_code)
     new_cache = !@@cache.key?(:last_cache_time)
     cache_timed_out = !new_cache && @today.to_time.to_i - @@cache[:last_cache_time] > 3600
@@ -60,10 +73,25 @@ class LocationsApi
     }
   end
 
+  # Expects an array of hashes representing open days of the branch. Returns an
+  # array of those days in order, rearranged to start with today_of_the_week. 
+  # hours_per_day can have up to 7 elements, but can have less. 
+  # With parameters:
+  #   [{day: 0, starthours: 1000, endhours: 1800},
+  #    {day: 1, starthours: 1000, endhours: 1800},
+  #   ...
+  #    {day: 5, starthours: 1000, endhours: 1800}], 'Tuesday'
+  # returns:
+  #   [{day: 2, starthours: 1000, endhours: 1800},
+  #    {day: 3, starthours: 1000, endhours: 1800},
+  #    {day: 4, starthours: 1000, endhours: 1800},
+  #    {day: 5, starthours: 1000, endhours: 1800},
+  #    {day: 0, starthours: 1000, endhours: 1800},
+  #    {day: 1, starthours: 1000, endhours: 1800}]
   def arrange_days(hours_per_day, today_of_the_week)
     # make sure days are in correct order. the day property is a number 0-6
     hours_per_day = hours_per_day.sort_by { |day| day[:day] }
-    # find the day object that contains today
+    # find the day object that corresponds to today_of_the_week
     day_index = hours_per_day.index { |day| day[:day] == @days_of_the_week.index(today_of_the_week) }
     # reorder day objects so today is first in the array
     if day_index.zero?
@@ -88,8 +116,24 @@ class LocationsApi
     hours
   end
 
-  # build an an array with opening and closing timestamps for every day of the next week,
-  # starting with today
+  # Takes an array of hours_per_day objects and returns an array rearranged
+  # and having transformed hours into date time strings. For example:
+  #   [{startTime: '2023-06-01T10:00:00+00:00',
+  #     endtime: '2023-06-01T18:00:00+00:00',
+  #     day: 'Thursday',
+  #     today: 'true'},
+  #   {startTime: '2023-06-02T10:00:00+00:00',
+  #     endtime: '2023-06-02T18:00:00+00:00',
+  #     day: 'Friday',
+  #     today: 'true'},
+  #     ...
+  #   {startTime: '2023-06-07T10:00:00+00:00',
+  #     endtime: '2023-06-07T18:00:00+00:00',
+  #     day: 'Tuesday',
+  #     today: 'true'},
+  #    {startTime: '2023-06-08T10:00:00+00:00',
+  #     endtime: '2023-06-08T18:00:00+00:00',
+  #     day: 'Wednesday'}]
   def build_hours_array(hours_per_day, current_day)
     # get the day of the week by human readable name
     today_of_the_week = current_day.strftime('%A')
