@@ -1,3 +1,6 @@
+# Deprecated
+The `locations` endpoint is served by a [python app](https://github.com/NYPL/locations-service/) as of 10/10/2023.
+
 # LocationsService
 
 Function that returns data for locations by code. Currently only urls are implemented. This retrieves the data set by the LocationsPoller
